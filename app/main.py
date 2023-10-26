@@ -14,8 +14,8 @@ def main():
     conn, addr = server_socket.accept()
 
     # read data
-    data = conn.recv()
-    
+    data = conn.recv(1024)
+
     # build response string encoded as utf-8
     response = "HTTP/1.1 200 OK\r\n\r\n".encode()
 
