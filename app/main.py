@@ -12,12 +12,22 @@ def main():
 
     # client is a connection
     conn, addr = server_socket.accept()
-
+    print(conn)
     # read data
-    data = conn.recv(1024)
+   # data = conn.recv(1024)
 
     # build response string encoded as utf-8
-    response = "HTTP/1.1 200 OK\r\n\r\n".encode()
+    #response = "HTTP/1.1 200 OK\r\n\r\n".encode()
+    
+    #request now makes it a webserver 
+    request = conn.recv(4096)
+    request = request.decode.split("\r\n")
+    http_method, path, http_version = request[0].split(" ")
+
+    if path == "/":
+        response = "HTTP/1.1 200 OK\r\n\r\n".encode()
+    else:
+        response = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
 
     # send response to client
     conn.send(response)
