@@ -21,7 +21,7 @@ def main():
     
     #request now makes it a webserver 
     request = conn.recv(4096)
-    request = request.decode.split("\r\n")
+    request = request.decode().split("\r\n")
     http_method, path, http_version = request[0].split(" ")
 
     if path == "/":
