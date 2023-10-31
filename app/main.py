@@ -1,5 +1,6 @@
 # Uncomment this to pass the first stage
 import socket
+import threading
 
 def prepare_user_agent_body(msg):
     agent = msg.split(": ")[1]
@@ -13,7 +14,8 @@ def prepare_echo_body(msg):
     print(body_str)
     return body_str.encode()
    
-def handle_data(data, conn):
+def handle_data(conn):
+    data = conn.recv(1024)
     data_str = data.decode()
     data_line = data_str.split("\r\n")
     method = data_line[0].split(" ")[0]
@@ -28,11 +30,14 @@ def handle_data(data, conn):
         conn.sendall(body)
     elif path.startswith("/user-agent"):
         user_agent = data_line[2]
+        # print(user_agent)
         body = prepare_user_agent_body(user_agent)
 
         conn.sendall(body)
     else:
         conn.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
+
+    conn.close()
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -43,11 +48,15 @@ def main():
     # server_socket.accept() # wait for client
 
     # client is a connection
-    conn, addr = server_socket.accept()
-    print(conn)
-    with conn:
-        data = conn.recv(1024)
-        handle_data(data, conn)
+    while True:
+        conn, addr = server_socket.accept()
+        # handle_data(data, conn)
+        client_thread = threading.Thread(
+            target=handle_data,
+            args=(conn,),
+        )
+
+        client_thread.start()
 
 if __name__ == "__main__":
     main()
