@@ -1,6 +1,13 @@
 # Uncomment this to pass the first stage
 import socket
 
+def prepare_user_agent_body(msg):
+    agent = msg.split(": ")[1]
+    body_str = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(agent)}\r\n\r\n{agent}"
+    print(body_str)
+
+    return body_str.encode()
+
 def prepare_echo_body(msg):
     body_str = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(msg)}\r\n\r\n{msg}"
     print(body_str)
@@ -11,10 +18,17 @@ def handle_data(data, conn):
     data_line = data_str.split("\r\n")
     method = data_line[0].split(" ")[0]
     path = data_line[0].split(" ")[1]
+
+    print(data_line)
     if path == "/":
         conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
     elif path.startswith("/echo"):
+    
         body = prepare_echo_body(path.split("/echo/")[1])
+        conn.sendall(body)
+    elif path.startswith("/user-agent"):
+        user_agent = data_line[2]
+        body = prepare_user_agent_body(user_agent)
 
         conn.sendall(body)
     else:
