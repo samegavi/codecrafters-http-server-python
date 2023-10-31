@@ -1,6 +1,24 @@
 # Uncomment this to pass the first stage
 import socket
 
+def prepare_echo_body(msg):
+    body_str = f"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {len(msg)}\r\n\r\n{msg}"
+    print(body_str)
+    return body_str.encode()
+   
+def handle_data(data, conn):
+    data_str = data.decode()
+    data_line = data_str.split("\r\n")
+    method = data_line[0].split(" ")[0]
+    path = data_line[0].split(" ")[1]
+    if path == "/":
+        conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
+    elif path.startswith("/echo"):
+        body = prepare_echo_body(path.split("/echo/")[1])
+
+        conn.sendall(body)
+    else:
+        conn.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -13,24 +31,9 @@ def main():
     # client is a connection
     conn, addr = server_socket.accept()
     print(conn)
-    # read data
-   # data = conn.recv(1024)
-
-    # build response string encoded as utf-8
-    #response = "HTTP/1.1 200 OK\r\n\r\n".encode()
-    
-    #request now makes it a webserver 
-    request = conn.recv(4096)
-    request = request.decode().split("\r\n")
-    http_method, path, http_version = request[0].split(" ")
-
-    if path == "/":
-        response = "HTTP/1.1 200 OK\r\n\r\n".encode()
-    else:
-        response = "HTTP/1.1 404 Not Found\r\n\r\n".encode()
-
-    # send response to client
-    conn.send(response)
+    with conn:
+        data = conn.recv(1024)
+        handle_data(data, conn)
 
 if __name__ == "__main__":
     main()
