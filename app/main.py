@@ -36,35 +36,54 @@ def handle_data(conn):
     data_line = data_str.split("\r\n")
     method = data_line[0].split(" ")[0]
     path = data_line[0].split(" ")[1]
+    if method == "GET":
+        # print(data_line)
+        if path == "/":
+            conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
+        elif path.startswith("/echo"):
+            body = prepare_echo_body(path.split("/echo/")[1])
+            conn.sendall(body)
+        elif path.startswith("/user-agent"):
+            user_agent = data_line[2]
+            # print(user_agent)
+            body = prepare_user_agent_body(user_agent)
+            conn.sendall(body)
+        elif path.startswith("/files"):
+            global DIRECTORY
+            print(DIRECTORY)
+            directory = DIRECTORY
+            file_name = path.split("/")[2]
+            full_path = directory + file_name
+            if os.path.isfile(full_path):
+                f = open(full_path)
+                file_data = f.read()
+                resp = prepare_file_body(file_data)
+            else:
+                resp = "\r\n".join(
+                    [
+                        f"HTTP/1.1 404 Not Found",
+                        "Content-Type: text/plain",
+                        "Content-Length: 0",
+                        "",
+                        "",
+                    ]
+                )
 
-    # print(data_line)
-    if path == "/":
-        conn.sendall(b"HTTP/1.1 200 OK\r\n\r\n")
-    elif path.startswith("/echo"):
-    
-        body = prepare_echo_body(path.split("/echo/")[1])
-        conn.sendall(body)
-    elif path.startswith("/user-agent"):
-        user_agent = data_line[2]
-        # print(user_agent)
-        body = prepare_user_agent_body(user_agent)
-
-        conn.sendall(body)
-    elif path.startswith("/files"):
-        global DIRECTORY
-        print(DIRECTORY)
-        directory = DIRECTORY
-        file_name = path.split("/")[2]
-        full_path = directory + file_name
-        if os.path.isfile(full_path):
-            print(full_path)
-            f = open(full_path)
-            file_data = f.read()
-            resp = prepare_file_body(file_data)
+            conn.sendall(resp.encode())
         else:
+            conn.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
+    elif method == "POST":
+        if path.startswith("/files"):
+            directory = DIRECTORY
+            data = data_line[-1]
+            print(data)
+            file_name = path.split("/")[2]
+            full_path = directory + file_name
+            with open(full_path, "w") as f:
+                f.write(data)
             resp = "\r\n".join(
                 [
-                    f"HTTP/1.1 404 Not Found",
+                    f"HTTP/1.1 201",
                     "Content-Type: text/plain",
                     "Content-Length: 0",
                     "",
@@ -72,10 +91,8 @@ def handle_data(conn):
                 ]
             )
 
-        conn.sendall(resp.encode())
-    
-    else:
-        conn.sendall(b"HTTP/1.1 404 Not Found\r\n\r\n")
+        
+            conn.sendall(resp.encode())
 
     conn.close()
 
